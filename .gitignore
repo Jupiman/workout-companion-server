@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+TestResults/
+coverage/
+runtime-data/
+*.db
+*.db-shm
+*.db-wal
+.env

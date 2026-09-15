@@ -1,0 +1,40 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<section class="hero">
+    <div>
+        <p class="eyebrow">Synchronized history</p>
+        <h1>Dashboard</h1>
+        <p class="muted">A read-only view of finalized workouts from Android.</p>
+    </div>
+    <div class="metric-grid" aria-label="Synchronization totals">
+        <article><strong>@Model.WorkoutCount</strong><span>Workouts</span></article>
+        <article><strong>@Model.ExerciseCount</strong><span>Exercises</span></article>
+        <article><strong>@Model.SetCount</strong><span>Sets</span></article>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Recent workouts</h2>
+    @if (Model.RecentWorkouts.Count == 0)
+    {
+        <p class="empty-state">No workouts have synchronized yet.</p>
+    }
+    else
+    {
+        <ol class="workout-list">
+            @foreach (var workout in Model.RecentWorkouts)
+            {
+                <li>
+                    <time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("d MMM yyyy")</time>
+                    <div><strong>@workout.WorkoutName</strong><span>@workout.ProgramName</span></div>
+                    <span class="status">@workout.Status.ToString().ToUpperInvariant()</span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+

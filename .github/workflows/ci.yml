@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore WorkoutCompanionServer.sln
+      - run: dotnet build WorkoutCompanionServer.sln --configuration Release --no-restore
+      - run: dotnet test WorkoutCompanionServer.sln --configuration Release --no-build
+      - run: docker build --tag workout-companion-server:ci .
+      - name: Smoke-test container
+        run: |
+          docker volume create workout-companion-ci-data
+          docker run --detach --name workout-companion-ci \
+            --env WORKOUT_API_TOKEN=ci-only-test-token \
+            --publish 8080:8080 \
+            --volume workout-companion-ci-data:/data \
+            workout-companion-server:ci
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8080/health; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8080/health
+          curl --fail --silent \
+            --header 'Authorization: Bearer ci-only-test-token' \
+            http://127.0.0.1:8080/api/v1/info
+          docker exec workout-companion-ci test -f /data/workout-companion.db
+      - name: Clean up smoke test
+        if: always()
+        run: |
+          docker rm --force workout-companion-ci || true
+          docker volume rm workout-companion-ci-data || true

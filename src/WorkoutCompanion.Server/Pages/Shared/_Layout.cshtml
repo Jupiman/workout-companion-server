@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Workout Companion</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" asp-page="/Index">Workout Companion</a>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <nav aria-label="Primary navigation">
+                <a asp-page="/Index">Dashboard</a>
+                <form method="post" asp-page="/Logout">
+                    <button class="link-button" type="submit">Logout</button>
+                </form>
+            </nav>
+        }
+    </header>
+    <main class="page-shell">
+        @RenderBody()
+    </main>
+</body>
+</html>
+
