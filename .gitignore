@@ -10,3 +10,4 @@ runtime-data/
 *.db-shm
 *.db-wal
 .env
+server-spec.md
