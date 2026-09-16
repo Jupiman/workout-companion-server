@@ -1,14 +1,122 @@
 @page "/progress/{trackSyncId:guid}"
 @model WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel
 @{
-    ViewData["Title"] = "Progress track";
+    var track = Model.Track!;
+    ViewData["Title"] = $"{track.ExerciseName} progress";
 }
 
 <a class="back-link" asp-page="/Progress/Index">← Back to progress</a>
-<section class="page-heading">
+<section class="page-heading progress-heading">
     <div>
-        <p class="eyebrow">Coming in Phase 2</p>
-        <h1>Progress track</h1>
-        <p class="muted">Track @Model.TrackSyncId will gain history and charts in Phase 2.</p>
+        <p class="eyebrow">@track.ProgramName</p>
+        <h1>@track.ExerciseName</h1>
+        <p class="muted">Progression history and estimated performance trends.</p>
     </div>
 </section>
+
+<section class="panel filter-panel">
+    <form method="get" class="detail-filter-grid">
+        <div>
+            <label asp-for="DateFrom">Date from</label>
+            <input asp-for="DateFrom" type="date" />
+        </div>
+        <div>
+            <label asp-for="DateTo">Date to</label>
+            <input asp-for="DateTo" type="date" />
+        </div>
+        <div class="filter-actions">
+            <button class="primary-button" type="submit">Apply range</button>
+            <a class="secondary-button" asp-page="/Progress/Details" asp-route-trackSyncId="@track.TrackSyncId">Clear</a>
+        </div>
+    </form>
+</section>
+
+<section class="progress-stat-grid" aria-label="Track statistics">
+    <article><span>Sessions</span><strong>@track.SessionCount</strong></article>
+    <article><span>Heaviest set</span><strong>@(track.HeaviestSet ?? "—")</strong></article>
+    <article><span>Best reps</span><strong>@(track.BestReps?.ToString() ?? "—")</strong></article>
+    <article><span>Best estimated 1RM</span><strong>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.BestEstimatedOneRepMax, " kg")</strong></article>
+</section>
+
+@if (track.Entries.Count == 0)
+{
+    <section class="panel">
+        <p class="empty-state">No sessions fall within this date range.</p>
+    </section>
+}
+else
+{
+    <section class="chart-grid" aria-label="Progress charts">
+        @if (track.WeightChart.HasData)
+        {
+            <article class="panel chart-card">
+                <div class="section-heading"><h2>Working weight</h2><span class="muted">kg</span></div>
+                <svg viewBox="0 0 700 180" role="img" aria-label="Working weight over time" preserveAspectRatio="none">
+                    <line x1="10" y1="170" x2="690" y2="170" />
+                    <polyline points="@track.WeightChart.Points" />
+                    @foreach (var marker in track.WeightChart.Markers)
+                    {
+                        <circle cx="@marker.X" cy="@marker.Y" r="4" />
+                    }
+                </svg>
+                <div class="chart-scale"><span>@track.WeightChart.FirstDate</span><strong>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.WeightChart.Minimum)–@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.WeightChart.Maximum) kg</strong><span>@track.WeightChart.LastDate</span></div>
+            </article>
+        }
+        @if (track.RepsChart.HasData)
+        {
+            <article class="panel chart-card">
+                <div class="section-heading"><h2>Best repetitions</h2><span class="muted">reps</span></div>
+                <svg viewBox="0 0 700 180" role="img" aria-label="Best repetitions over time" preserveAspectRatio="none">
+                    <line x1="10" y1="170" x2="690" y2="170" />
+                    <polyline points="@track.RepsChart.Points" />
+                    @foreach (var marker in track.RepsChart.Markers)
+                    {
+                        <circle cx="@marker.X" cy="@marker.Y" r="4" />
+                    }
+                </svg>
+                <div class="chart-scale"><span>@track.RepsChart.FirstDate</span><strong>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.RepsChart.Minimum)–@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.RepsChart.Maximum) reps</strong><span>@track.RepsChart.LastDate</span></div>
+            </article>
+        }
+        @if (track.EstimatedOneRepMaxChart.HasData)
+        {
+            <article class="panel chart-card">
+                <div class="section-heading"><h2>Estimated 1RM</h2><span class="muted">Epley</span></div>
+                <svg viewBox="0 0 700 180" role="img" aria-label="Estimated one repetition maximum over time" preserveAspectRatio="none">
+                    <line x1="10" y1="170" x2="690" y2="170" />
+                    <polyline points="@track.EstimatedOneRepMaxChart.Points" />
+                    @foreach (var marker in track.EstimatedOneRepMaxChart.Markers)
+                    {
+                        <circle cx="@marker.X" cy="@marker.Y" r="4" />
+                    }
+                </svg>
+                <div class="chart-scale"><span>@track.EstimatedOneRepMaxChart.FirstDate</span><strong>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.EstimatedOneRepMaxChart.Minimum)–@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(track.EstimatedOneRepMaxChart.Maximum) kg</strong><span>@track.EstimatedOneRepMaxChart.LastDate</span></div>
+            </article>
+        }
+    </section>
+
+    <section class="panel">
+        <div class="section-heading"><h2>Session history</h2><span class="muted">Newest first</span></div>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Date</th><th>Workout</th><th>Weight</th><th>Reps</th><th>Duration</th><th>Volume</th><th>Est. 1RM</th><th>Sets</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in track.Entries)
+                    {
+                        <tr>
+                            <td><time datetime="@entry.CompletedAt.ToString("O")">@entry.CompletedAt.ToLocalTime().ToString("d MMM yyyy")</time></td>
+                            <td><a asp-page="/Workouts/Details" asp-route-syncId="@entry.WorkoutSyncId">@entry.WorkoutName</a></td>
+                            <td>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(entry.WeightKg, " kg")</td>
+                            <td>@entry.RepsSummary</td>
+                            <td>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDuration(entry.BestDurationSeconds)</td>
+                            <td>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(entry.VolumeKg, " kg")</td>
+                            <td>@WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel.FormatDecimal(entry.EstimatedOneRepMaxKg, " kg")</td>
+                            <td>@entry.SetCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

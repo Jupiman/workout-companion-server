@@ -30,13 +30,14 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
     }
 
     [Fact]
-    public async Task Authenticated_history_and_workout_detail_routes_render()
+    public async Task Authenticated_history_workout_and_progress_routes_render()
     {
         var workoutId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<WorkoutDbContext>();
-            database.WorkoutSessions.Add(CreateWorkout(workoutId));
+            database.WorkoutSessions.Add(CreateWorkout(workoutId, trackId));
             await database.SaveChangesAsync();
         }
 
@@ -49,15 +50,24 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
 
         using var history = await client.GetAsync("/history");
         using var detail = await client.GetAsync($"/workouts/{workoutId:D}");
+        using var progress = await client.GetAsync("/progress");
+        using var track = await client.GetAsync($"/progress/{trackId:D}");
         var historyHtml = await history.Content.ReadAsStringAsync();
         var detailHtml = await detail.Content.ReadAsStringAsync();
+        var progressHtml = await progress.Content.ReadAsStringAsync();
+        var trackHtml = await track.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, history.StatusCode);
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, progress.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, track.StatusCode);
         Assert.Contains("Route Workout", historyHtml, StringComparison.Ordinal);
         Assert.Contains("Route Workout", detailHtml, StringComparison.Ordinal);
         Assert.Contains("Warm-up", detailHtml, StringComparison.Ordinal);
         Assert.Contains(">-1<", detailHtml, StringComparison.Ordinal);
+        Assert.Contains("Bench Press", progressHtml, StringComparison.Ordinal);
+        Assert.Contains("Bench Press", trackHtml, StringComparison.Ordinal);
+        Assert.Contains("Estimated 1RM", trackHtml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -128,7 +138,7 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
     }
 
-    private static WorkoutSessionEntity CreateWorkout(Guid workoutId)
+    private static WorkoutSessionEntity CreateWorkout(Guid workoutId, Guid? trackId = null)
     {
         var completedAt = new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero);
         return new WorkoutSessionEntity
@@ -147,10 +157,14 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
                 new SessionExerciseEntity
                 {
                     SyncId = Guid.NewGuid(),
-                    SourceProgressionTrackSyncId = Guid.NewGuid(),
+                    SourceProgressionTrackSyncId = trackId ?? Guid.NewGuid(),
                     ExerciseNameSnapshot = "Bench Press",
                     SortOrderSnapshot = 0,
                     TrackingMode = TrackingMode.WeightReps,
+                    TargetRepsSnapshot = 8,
+                    PrescribedWeightCentiKgSnapshot = 7000,
+                    ResultingProgressionWeightCentiKg = 7250,
+                    ResultingProgressionTargetReps = 8,
                     Sets =
                     [
                         new SessionSetEntity
