@@ -93,6 +93,55 @@ public sealed class WorkoutApiTests(TestApplicationFactory factory) : IClassFixt
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Upload_with_non_utc_offsets_preserves_absolute_instants()
+    {
+        var workoutId = Guid.NewGuid();
+        var startedAt = new DateTimeOffset(2026, 9, 15, 10, 0, 0, 123, TimeSpan.FromHours(2));
+        var completedAt = new DateTimeOffset(2026, 9, 15, 11, 15, 0, 456, TimeSpan.FromHours(2));
+        var setCompletedAt = new DateTimeOffset(2026, 9, 15, 10, 30, 0, 789, TimeSpan.FromHours(2));
+        var request = CreateWorkout(workoutId, "Offset Bench Press", 7000);
+        var exercise = request.Exercises!.Single();
+        var set = exercise.Sets!.Single() with { CompletedAt = setCompletedAt };
+        request = request with
+        {
+            StartedAt = startedAt,
+            CompletedAt = completedAt,
+            Exercises = [exercise with { Sets = [set] }],
+        };
+        using var client = CreateAuthenticatedClient();
+
+        using var response = await PutWorkout(client, request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<WorkoutDbContext>();
+        var stored = await database.WorkoutSessions
+            .AsNoTracking()
+            .Include(session => session.Exercises)
+            .ThenInclude(storedExercise => storedExercise.Sets)
+            .SingleAsync(session => session.SyncId == workoutId);
+
+        Assert.Equal(startedAt.ToUnixTimeMilliseconds(), stored.StartedAt.ToUnixTimeMilliseconds());
+        Assert.Equal(completedAt.ToUnixTimeMilliseconds(), stored.CompletedAt.ToUnixTimeMilliseconds());
+        Assert.Equal(setCompletedAt.ToUnixTimeMilliseconds(), stored.Exercises.Single().Sets.Single().CompletedAt?.ToUnixTimeMilliseconds());
+        Assert.Equal(TimeSpan.Zero, stored.StartedAt.Offset);
+        Assert.Equal(TimeSpan.Zero, stored.CompletedAt.Offset);
+        Assert.Equal(TimeSpan.Zero, stored.ReceivedAt.Offset);
+        Assert.Equal(TimeSpan.Zero, stored.LastReceivedAt.Offset);
+
+        await database.Database.OpenConnectionAsync();
+        await using var command = database.Database.GetDbConnection().CreateCommand();
+        command.CommandText = "SELECT typeof(StartedAt), typeof(CompletedAt), typeof(ReceivedAt), typeof(LastReceivedAt) FROM WorkoutSessions WHERE SyncId = $syncId;";
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "$syncId";
+        parameter.Value = workoutId.ToString("D");
+        command.Parameters.Add(parameter);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.All(Enumerable.Range(0, 4), index => Assert.Equal("integer", reader.GetString(index)));
+    }
+
     private HttpClient CreateAuthenticatedClient()
     {
         var client = factory.CreateClient();
@@ -160,4 +209,3 @@ public sealed class WorkoutApiTests(TestApplicationFactory factory) : IClassFixt
         return options;
     }
 }
-

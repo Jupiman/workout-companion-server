@@ -65,7 +65,9 @@ dotnet build WorkoutCompanionServer.sln
 dotnet test WorkoutCompanionServer.sln
 ```
 
-For local development, set `Workout__ApiToken` or `WORKOUT_API_TOKEN`. The default data directory is `./data`; override it with `WORKOUT_DATA_DIRECTORY`.
+For local development, set `Workout__ApiToken` or `WORKOUT_API_TOKEN`. The default data directory is `./runtime-data`; override it with `WORKOUT_DATA_DIRECTORY`.
+
+SQLite persists absolute timestamps as UTC Unix epoch milliseconds in `INTEGER` columns. The API continues to accept and return normal ISO-8601 timestamps with offsets.
 
 ## Upgrades and compatibility
 

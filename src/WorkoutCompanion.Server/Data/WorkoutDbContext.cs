@@ -16,11 +16,24 @@ public sealed class WorkoutDbContext(DbContextOptions<WorkoutDbContext> options)
         workout.HasKey(entity => entity.Id);
         workout.HasIndex(entity => entity.SyncId).IsUnique();
         workout.HasIndex(entity => entity.CompletedAt);
+        workout.HasIndex(entity => entity.StartedAt);
         workout.Property(entity => entity.SyncId).HasConversion<string>().HasMaxLength(36);
         workout.Property(entity => entity.ProgramNameSnapshot).HasMaxLength(200);
         workout.Property(entity => entity.WorkoutNameSnapshot).HasMaxLength(200);
         workout.Property(entity => entity.SourceDeviceId).HasMaxLength(128);
         workout.Property(entity => entity.Status).HasConversion<string>().HasMaxLength(32);
+        workout.Property(entity => entity.StartedAt)
+            .HasConversion(SqliteUtcUnixMillisecondsConverters.Required)
+            .HasColumnType("INTEGER");
+        workout.Property(entity => entity.CompletedAt)
+            .HasConversion(SqliteUtcUnixMillisecondsConverters.Required)
+            .HasColumnType("INTEGER");
+        workout.Property(entity => entity.ReceivedAt)
+            .HasConversion(SqliteUtcUnixMillisecondsConverters.Required)
+            .HasColumnType("INTEGER");
+        workout.Property(entity => entity.LastReceivedAt)
+            .HasConversion(SqliteUtcUnixMillisecondsConverters.Required)
+            .HasColumnType("INTEGER");
         workout.HasMany(entity => entity.Exercises)
             .WithOne(entity => entity.WorkoutSession)
             .HasForeignKey(entity => entity.WorkoutSessionId)
@@ -49,6 +62,8 @@ public sealed class WorkoutDbContext(DbContextOptions<WorkoutDbContext> options)
         set.Property(entity => entity.SyncId).HasConversion<string>().HasMaxLength(36);
         set.Property(entity => entity.SetType).HasConversion<string>().HasMaxLength(32);
         set.Property(entity => entity.Status).HasConversion<string>().HasMaxLength(32);
+        set.Property(entity => entity.CompletedAt)
+            .HasConversion(SqliteUtcUnixMillisecondsConverters.Optional)
+            .HasColumnType("INTEGER");
     }
 }
-
