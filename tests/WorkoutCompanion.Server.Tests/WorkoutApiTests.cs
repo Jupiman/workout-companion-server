@@ -82,6 +82,48 @@ public sealed class WorkoutApiTests(TestApplicationFactory factory) : IClassFixt
     }
 
     [Fact]
+    public async Task Batch_with_mixed_warmup_and_working_sets_preserves_original_orders()
+    {
+        int[] expectedOrders = [-3, -2, -1, 0, 1, 2];
+        var workoutId = Guid.NewGuid();
+        var request = CreateWorkout(workoutId, "Bench Press", 7000);
+        var exercise = request.Exercises!.Single();
+        var templateSet = exercise.Sets!.Single();
+        var sets = expectedOrders
+            .Select(order => templateSet with
+            {
+                SyncId = Guid.NewGuid(),
+                SetOrder = order,
+                SetType = order < 0 ? WorkoutSetType.Warmup : WorkoutSetType.Working,
+                CountsForProgression = order >= 0,
+            })
+            .ToArray();
+        request = request with { Exercises = [exercise with { Sets = sets }] };
+        using var client = CreateAuthenticatedClient();
+        var batch = new BatchWorkoutUploadRequest([request]);
+
+        using var response = await client.PostAsJsonAsync("/api/v1/workouts/batch", batch, JsonOptions);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<BatchWorkoutUploadResponse>(JsonOptions);
+        Assert.NotNull(result);
+        Assert.Contains(result.Results, item => item.SyncId == workoutId && item.Status == "CREATED");
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<WorkoutDbContext>();
+        var storedSets = await database.SessionSets
+            .AsNoTracking()
+            .Where(set => set.SessionExercise.WorkoutSession.SyncId == workoutId)
+            .OrderBy(set => set.SetOrder)
+            .Select(set => new { set.SetOrder, set.SetType })
+            .ToListAsync();
+
+        Assert.Equal(expectedOrders, storedSets.Select(set => set.SetOrder));
+        Assert.All(storedSets.Take(3), set => Assert.Equal(WorkoutSetType.Warmup, set.SetType));
+        Assert.All(storedSets.Skip(3), set => Assert.Equal(WorkoutSetType.Working, set.SetType));
+    }
+
+    [Fact]
     public async Task Route_and_payload_sync_ids_must_match()
     {
         var request = CreateWorkout(Guid.NewGuid(), "Squat", 10000);

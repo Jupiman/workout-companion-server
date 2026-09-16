@@ -155,9 +155,10 @@ public sealed class WorkoutPayloadValidator
                 errors.Add($"Duplicate set syncId '{set.SyncId:D}'.");
             }
 
-            if (set.SetOrder < 0)
+            if (set.SetOrder < 0 && set.SetType != WorkoutSetType.Warmup)
             {
-                errors.Add($"Set '{set.SyncId:D}' has a negative setOrder.");
+                errors.Add(
+                    $"Set '{set.SyncId:D}' has a negative setOrder but is not a WARMUP set.");
             }
 
             if (!Enum.IsDefined(set.SetType))
