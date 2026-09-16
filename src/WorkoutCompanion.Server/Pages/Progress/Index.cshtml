@@ -6,62 +6,8 @@
 
 <section class="page-heading">
     <div>
-        <p class="eyebrow">Training trends</p>
+        <p class="eyebrow">Coming in Phase 2</p>
         <h1>Progress</h1>
-        <p class="muted">Current targets and session history for synchronized progression tracks.</p>
+        <p class="muted">Progression tracks and charts will be added in the next implementation phase.</p>
     </div>
-</section>
-
-<section class="panel filter-panel">
-    <form method="get" class="progress-filter-grid">
-        <div>
-            <label asp-for="Exercise">Exercise</label>
-            <input asp-for="Exercise" type="search" placeholder="Exercise name" />
-        </div>
-        <div>
-            <label asp-for="DateFrom">Activity from</label>
-            <input asp-for="DateFrom" type="date" />
-        </div>
-        <div>
-            <label asp-for="DateTo">Activity to</label>
-            <input asp-for="DateTo" type="date" />
-        </div>
-        <div class="filter-actions">
-            <button class="primary-button" type="submit">Apply filters</button>
-            <a class="secondary-button" asp-page="/Progress/Index">Clear</a>
-        </div>
-    </form>
-</section>
-
-<section class="panel">
-    <div class="section-heading">
-        <h2>Progression tracks</h2>
-        <span class="muted">@Model.Tracks.Count track@(Model.Tracks.Count == 1 ? string.Empty : "s")</span>
-    </div>
-    @if (Model.Tracks.Count == 0)
-    {
-        <p class="empty-state">No progression tracks match these filters.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table class="data-table progress-table">
-                <thead>
-                    <tr><th>Exercise</th><th>Program</th><th>Current target</th><th>Last used</th><th>Sessions</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var track in Model.Tracks)
-                    {
-                        <tr>
-                            <td><a asp-page="/Progress/Details" asp-route-trackSyncId="@track.TrackSyncId"><strong>@track.ExerciseName</strong></a></td>
-                            <td>@track.ProgramName</td>
-                            <td>@WorkoutCompanion.Server.Pages.Progress.ProgressIndexModel.FormatCurrentTarget(track)</td>
-                            <td><time datetime="@track.LastPerformed.ToString("O")">@track.LastPerformed.ToLocalTime().ToString("d MMM yyyy")</time></td>
-                            <td>@track.SessionCount</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
 </section>
