@@ -16,7 +16,9 @@ public sealed class WorkoutDbContext(DbContextOptions<WorkoutDbContext> options)
         workout.HasKey(entity => entity.Id);
         workout.HasIndex(entity => entity.SyncId).IsUnique();
         workout.HasIndex(entity => entity.CompletedAt);
+        workout.HasIndex(entity => new { entity.CompletedAt, entity.Id });
         workout.HasIndex(entity => entity.StartedAt);
+        workout.HasIndex(entity => entity.ProgramNameSnapshot);
         workout.Property(entity => entity.SyncId).HasConversion<string>().HasMaxLength(36);
         workout.Property(entity => entity.ProgramNameSnapshot).HasMaxLength(200);
         workout.Property(entity => entity.WorkoutNameSnapshot).HasMaxLength(200);
@@ -45,6 +47,7 @@ public sealed class WorkoutDbContext(DbContextOptions<WorkoutDbContext> options)
         exercise.HasIndex(entity => entity.SyncId).IsUnique();
         exercise.HasIndex(entity => new { entity.WorkoutSessionId, entity.SortOrderSnapshot });
         exercise.HasIndex(entity => entity.SourceProgressionTrackSyncId);
+        exercise.HasIndex(entity => entity.ExerciseNameSnapshot);
         exercise.Property(entity => entity.SyncId).HasConversion<string>().HasMaxLength(36);
         exercise.Property(entity => entity.SourceProgressionTrackSyncId).HasConversion<string>().HasMaxLength(36);
         exercise.Property(entity => entity.ExerciseNameSnapshot).HasMaxLength(200);

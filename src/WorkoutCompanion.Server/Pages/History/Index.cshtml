@@ -1,0 +1,132 @@
+@page "/history"
+@model WorkoutCompanion.Server.Pages.History.HistoryModel
+@{
+    ViewData["Title"] = "History";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Synchronized workouts</p>
+        <h1>History</h1>
+        <p class="muted">Browse finalized workouts and their recorded sets.</p>
+    </div>
+</section>
+
+<section class="panel filter-panel">
+    <form method="get" class="filter-grid">
+        <div>
+            <label asp-for="DateFrom">Date from</label>
+            <input asp-for="DateFrom" type="date" />
+        </div>
+        <div>
+            <label asp-for="DateTo">Date to</label>
+            <input asp-for="DateTo" type="date" />
+        </div>
+        <div>
+            <label asp-for="Program">Program</label>
+            <select asp-for="Program">
+                <option value="">All programs</option>
+                @foreach (var program in Model.ProgramOptions)
+                {
+                    <option value="@program">@program</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="WorkoutName">Workout</label>
+            <input asp-for="WorkoutName" placeholder="Workout name" />
+        </div>
+        <div>
+            <label asp-for="Status">Status</label>
+            <select asp-for="Status">
+                <option value="">All statuses</option>
+                <option value="Completed">Completed</option>
+                <option value="Partial">Partial</option>
+            </select>
+        </div>
+        <div>
+            <label asp-for="Exercise">Exercise</label>
+            <select asp-for="Exercise">
+                <option value="">All exercises</option>
+                @foreach (var exercise in Model.ExerciseOptions)
+                {
+                    <option value="@exercise">@exercise</option>
+                }
+            </select>
+        </div>
+        <div class="filter-search">
+            <label asp-for="Search">Search</label>
+            <input asp-for="Search" type="search" placeholder="Program, workout, or exercise" />
+        </div>
+        <div class="filter-actions">
+            <button class="primary-button" type="submit">Apply filters</button>
+            <a class="secondary-button" asp-page="/History/Index">Clear</a>
+        </div>
+    </form>
+</section>
+
+<section class="panel history-panel">
+    <div class="section-heading">
+        <h2>Workouts</h2>
+        <span class="muted">Showing @Model.ResultStart–@Model.ResultEnd of @Model.TotalCount</span>
+    </div>
+    @if (Model.Workouts.Count == 0)
+    {
+        <p class="empty-state">No workouts match these filters.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="data-table history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Program</th>
+                        <th>Workout</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                        <th>Exercises</th>
+                        <th>Sets</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var workout in Model.Workouts)
+                    {
+                        <tr>
+                            <td><a asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId"><time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("d MMM yyyy, HH:mm")</time></a></td>
+                            <td>@workout.ProgramName</td>
+                            <td><a asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId"><strong>@workout.WorkoutName</strong></a></td>
+                            <td><span class="status">@workout.Status.ToString().ToUpperInvariant()</span></td>
+                            <td>@workout.Duration.ToString(@"h\:mm")</td>
+                            <td>@workout.ExerciseCount</td>
+                            <td>@workout.SetCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="pagination" aria-label="History pages">
+            @if (Model.HasPreviousPage)
+            {
+                <a asp-page="/History/Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-dateFrom="@Model.DateFrom" asp-route-dateTo="@Model.DateTo" asp-route-program="@Model.Program" asp-route-workoutName="@Model.WorkoutName" asp-route-status="@Model.Status" asp-route-exercise="@Model.Exercise" asp-route-search="@Model.Search">← Previous</a>
+            }
+            else
+            {
+                <span>← Previous</span>
+            }
+            <strong>Page @Model.PageNumber of @Model.TotalPages</strong>
+            @if (Model.HasNextPage)
+            {
+                <a asp-page="/History/Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-dateFrom="@Model.DateFrom" asp-route-dateTo="@Model.DateTo" asp-route-program="@Model.Program" asp-route-workoutName="@Model.WorkoutName" asp-route-status="@Model.Status" asp-route-exercise="@Model.Exercise" asp-route-search="@Model.Search">Next →</a>
+            }
+            else
+            {
+                <span>Next →</span>
+            }
+        </nav>
+    }
+</section>

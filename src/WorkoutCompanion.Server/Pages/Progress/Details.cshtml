@@ -1,0 +1,14 @@
+@page "/progress/{trackSyncId:guid}"
+@model WorkoutCompanion.Server.Pages.Progress.ProgressDetailsModel
+@{
+    ViewData["Title"] = "Progress track";
+}
+
+<a class="back-link" asp-page="/Progress/Index">← Back to progress</a>
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Coming in Phase 2</p>
+        <h1>Progress track</h1>
+        <p class="muted">Track @Model.TrackSyncId will gain history and charts in Phase 2.</p>
+    </div>
+</section>

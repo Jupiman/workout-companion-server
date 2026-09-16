@@ -1,0 +1,72 @@
+@page "/workouts/{syncId:guid}"
+@model WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel
+@{
+    ViewData["Title"] = Model.Workout?.WorkoutName ?? "Workout";
+    var workout = Model.Workout!;
+}
+
+<a class="back-link" asp-page="/History/Index">← Back to history</a>
+<section class="page-heading workout-heading">
+    <div>
+        <p class="eyebrow">@workout.ProgramName</p>
+        <h1>@workout.WorkoutName</h1>
+        <p class="muted">
+            <time datetime="@workout.StartedAt.ToString("O")">@workout.StartedAt.ToLocalTime().ToString("d MMM yyyy, HH:mm")</time>
+            – <time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("HH:mm")</time>
+        </p>
+    </div>
+    <div class="workout-meta">
+        <span><strong>@workout.Duration.ToString(@"h\:mm")</strong>Duration</span>
+        <span><strong class="status">@workout.Status.ToString().ToUpperInvariant()</strong>Status</span>
+    </div>
+</section>
+
+@foreach (var exercise in workout.Exercises)
+{
+    <section class="panel exercise-panel">
+        <div class="section-heading">
+            <h2>
+                @if (exercise.SourceProgressionTrackSyncId.HasValue)
+                {
+                    <a asp-page="/Progress/Details" asp-route-trackSyncId="@exercise.SourceProgressionTrackSyncId">@exercise.Name</a>
+                }
+                else
+                {
+                    @exercise.Name
+                }
+            </h2>
+            <span class="muted">@exercise.TrackingMode</span>
+        </div>
+        @if (exercise.Sets.Count == 0)
+        {
+            <p class="empty-state">No sets were recorded for this exercise.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="data-table set-table">
+                    <thead>
+                        <tr><th>Set</th><th>Order</th><th>Type</th><th>Target</th><th>Actual</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var set in exercise.Sets)
+                        {
+                            <tr class="@(set.SetType == WorkoutCompanion.Server.Contracts.WorkoutSetType.Warmup ? "warmup-row" : null)">
+                                <td><strong>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatSetLabel(set)</strong></td>
+                                <td>@set.SetOrder</td>
+                                <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatSetType(set.SetType)</td>
+                                <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatPerformance(exercise.TrackingMode, set.PrescribedWeightCentiKg, set.PrescribedReps, set.PrescribedDurationSeconds)</td>
+                                <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatPerformance(exercise.TrackingMode, set.ActualWeightCentiKg, set.ActualReps, set.ActualDurationSeconds)</td>
+                                <td>@set.Status</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (exercise.HasProgressionChange)
+        {
+            <p class="progression"><span>Progression</span> @WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatProgression(exercise)</p>
+        }
+    </section>
+}

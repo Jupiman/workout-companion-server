@@ -17,14 +17,16 @@ public sealed class IndexModel(WorkoutDbContext database) : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        WorkoutCount = await database.WorkoutSessions.CountAsync(cancellationToken);
-        ExerciseCount = await database.SessionExercises.CountAsync(cancellationToken);
-        SetCount = await database.SessionSets.CountAsync(cancellationToken);
+        WorkoutCount = await database.WorkoutSessions.AsNoTracking().CountAsync(cancellationToken);
+        ExerciseCount = await database.SessionExercises.AsNoTracking().CountAsync(cancellationToken);
+        SetCount = await database.SessionSets.AsNoTracking().CountAsync(cancellationToken);
         RecentWorkouts = await database.WorkoutSessions
             .AsNoTracking()
             .OrderByDescending(workout => workout.CompletedAt)
+            .ThenByDescending(workout => workout.Id)
             .Take(8)
             .Select(workout => new RecentWorkout(
+                workout.SyncId,
                 workout.WorkoutNameSnapshot,
                 workout.ProgramNameSnapshot,
                 workout.CompletedAt,
@@ -33,6 +35,7 @@ public sealed class IndexModel(WorkoutDbContext database) : PageModel
     }
 
     public sealed record RecentWorkout(
+        Guid SyncId,
         string WorkoutName,
         string ProgramName,
         DateTimeOffset CompletedAt,

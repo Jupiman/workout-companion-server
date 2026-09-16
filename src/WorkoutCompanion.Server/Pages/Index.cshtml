@@ -29,9 +29,11 @@
             @foreach (var workout in Model.RecentWorkouts)
             {
                 <li>
-                    <time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("d MMM yyyy")</time>
-                    <div><strong>@workout.WorkoutName</strong><span>@workout.ProgramName</span></div>
-                    <span class="status">@workout.Status.ToString().ToUpperInvariant()</span>
+                    <a class="workout-row" asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId">
+                        <time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("d MMM yyyy")</time>
+                        <div><strong>@workout.WorkoutName</strong><span>@workout.ProgramName</span></div>
+                        <span class="status">@workout.Status.ToString().ToUpperInvariant()</span>
+                    </a>
                 </li>
             }
         </ol>
