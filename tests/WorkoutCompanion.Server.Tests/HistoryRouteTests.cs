@@ -22,10 +22,16 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
         using var history = await client.GetAsync("/history");
         using var workout = await client.GetAsync($"/workouts/{Guid.NewGuid():D}");
         using var progress = await client.GetAsync("/progress");
+        using var analytics = await client.GetAsync("/analytics");
+        using var csv = await client.GetAsync("/export/csv");
+        using var json = await client.GetAsync("/export/json");
 
         Assert.Equal(HttpStatusCode.Redirect, history.StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, workout.StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, progress.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, analytics.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, csv.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, json.StatusCode);
         Assert.Equal("/Login", history.Headers.Location?.AbsolutePath);
     }
 
@@ -52,15 +58,24 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
         using var detail = await client.GetAsync($"/workouts/{workoutId:D}");
         using var progress = await client.GetAsync("/progress");
         using var track = await client.GetAsync($"/progress/{trackId:D}");
+        using var analytics = await client.GetAsync("/analytics?Year=2026");
+        using var csv = await client.GetAsync("/export/csv?Program=Route%20Program");
+        using var json = await client.GetAsync("/export/json?Program=Route%20Program");
         var historyHtml = await history.Content.ReadAsStringAsync();
         var detailHtml = await detail.Content.ReadAsStringAsync();
         var progressHtml = await progress.Content.ReadAsStringAsync();
         var trackHtml = await track.Content.ReadAsStringAsync();
+        var analyticsHtml = await analytics.Content.ReadAsStringAsync();
+        var csvText = await csv.Content.ReadAsStringAsync();
+        var jsonText = await json.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, history.StatusCode);
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
         Assert.Equal(HttpStatusCode.OK, progress.StatusCode);
         Assert.Equal(HttpStatusCode.OK, track.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, analytics.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, csv.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, json.StatusCode);
         Assert.Contains("Route Workout", historyHtml, StringComparison.Ordinal);
         Assert.Contains("Route Workout", detailHtml, StringComparison.Ordinal);
         Assert.Contains("Warm-up", detailHtml, StringComparison.Ordinal);
@@ -68,6 +83,9 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
         Assert.Contains("Bench Press", progressHtml, StringComparison.Ordinal);
         Assert.Contains("Bench Press", trackHtml, StringComparison.Ordinal);
         Assert.Contains("Estimated 1RM", trackHtml, StringComparison.Ordinal);
+        Assert.Contains("Route Program", analyticsHtml, StringComparison.Ordinal);
+        Assert.Contains("Route Workout", csvText, StringComparison.Ordinal);
+        Assert.Contains("\"workoutName\": \"Route Workout\"", jsonText, StringComparison.Ordinal);
     }
 
     [Fact]

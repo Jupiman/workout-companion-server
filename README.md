@@ -2,7 +2,7 @@
 
 Self-hosted companion service for the Workout Companion Android app. Android remains authoritative; this server accepts immutable finalized-workout snapshots and provides a private, read-only browser view.
 
-This initial implementation includes:
+This implementation includes:
 
 - SQLite persistence and automatic EF Core migrations
 - bearer-token API authentication
@@ -10,10 +10,12 @@ This initial implementation includes:
 - `GET /health` and authenticated `GET /api/v1/info`
 - idempotent `PUT /api/v1/workouts/{syncId}` ingestion
 - bounded `POST /api/v1/workouts/batch` ingestion with per-workout results
-- a small authenticated dashboard showing persisted counts and recent workouts
+- authenticated Dashboard, History, Progress, and Analytics pages
+- server-side History filters and pagination with workout/set detail
+- progression charts, PRs, volume, and estimated 1RM tracking
+- yearly workout heatmaps and program/training-day summaries
+- filtered CSV and JSON history exports
 - Docker, Compose, automated tests, and CI
-
-Android sync and the complete History/Progress UI remain follow-up phases.
 
 ## Run with Docker Compose
 
@@ -54,6 +56,19 @@ Authorization: Bearer <token>
 ```
 
 Each item is validated and committed independently. The response reports `CREATED`, `UPDATED`, or `REJECTED` per workout.
+
+## Web UI
+
+Browser routes require login with the configured server token:
+
+- `/` — synchronization dashboard and recent workouts
+- `/history` — filtered, paginated workout history
+- `/workouts/{syncId}` — workout, exercise, and set details
+- `/progress` and `/progress/{trackSyncId}` — progression targets, charts, and PRs
+- `/analytics` — yearly heatmap and program/training-day summaries
+- `/export/csv` and `/export/json` — downloads using the same query filters as History
+
+The web UI is read-only. Export routes use cookie authentication and do not change API v1.
 
 ## Development
 

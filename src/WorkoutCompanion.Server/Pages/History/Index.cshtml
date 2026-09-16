@@ -74,7 +74,13 @@
 <section class="panel history-panel">
     <div class="section-heading">
         <h2>Workouts</h2>
-        <span class="muted">Showing @Model.ResultStart–@Model.ResultEnd of @Model.TotalCount</span>
+        <div class="history-heading-actions">
+            <span class="muted">Showing @Model.ResultStart–@Model.ResultEnd of @Model.TotalCount</span>
+            <span class="export-actions">
+                <a asp-page="/Export/Csv" asp-route-dateFrom="@Model.DateFrom" asp-route-dateTo="@Model.DateTo" asp-route-program="@Model.Program" asp-route-workoutName="@Model.WorkoutName" asp-route-status="@Model.Status" asp-route-exercise="@Model.Exercise" asp-route-search="@Model.Search">CSV</a>
+                <a asp-page="/Export/Json" asp-route-dateFrom="@Model.DateFrom" asp-route-dateTo="@Model.DateTo" asp-route-program="@Model.Program" asp-route-workoutName="@Model.WorkoutName" asp-route-status="@Model.Status" asp-route-exercise="@Model.Exercise" asp-route-search="@Model.Search">JSON</a>
+            </span>
+        </div>
     </div>
     @if (Model.Workouts.Count == 0)
     {

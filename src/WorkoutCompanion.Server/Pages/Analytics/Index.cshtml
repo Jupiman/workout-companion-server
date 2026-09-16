@@ -1,0 +1,109 @@
+@page "/analytics"
+@model WorkoutCompanion.Server.Pages.Analytics.AnalyticsModel
+@{
+    ViewData["Title"] = "Analytics";
+}
+
+<section class="page-heading analytics-heading">
+    <div>
+        <p class="eyebrow">Training overview</p>
+        <h1>Analytics</h1>
+        <p class="muted">Workout frequency, consistency, and program summaries.</p>
+    </div>
+    <form method="get" class="year-filter">
+        <label asp-for="Year">Year</label>
+        <input asp-for="Year" type="number" min="2000" max="2100" />
+        <button class="primary-button" type="submit">View</button>
+    </form>
+</section>
+
+<section class="analytics-stat-grid" aria-label="Year statistics">
+    <article><span>Workouts</span><strong>@Model.TotalWorkouts</strong></article>
+    <article><span>Active days</span><strong>@Model.ActiveDays</strong></article>
+    <article><span>Longest streak</span><strong>@Model.LongestStreak day@(Model.LongestStreak == 1 ? string.Empty : "s")</strong></article>
+    <article><span>Total sets</span><strong>@Model.TotalSets</strong></article>
+    <article><span>Training time</span><strong>@((int)Model.TotalDuration.TotalHours)h @Model.TotalDuration.Minutes.ToString("00")m</strong></article>
+</section>
+
+<section class="panel heatmap-panel">
+    <div class="section-heading">
+        <h2>@Model.SelectedYear activity</h2>
+        <span class="heatmap-legend"><i class="heat-0"></i> Less <i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i> More</span>
+    </div>
+    <div class="heatmap-scroll">
+        <div class="heatmap" role="grid" aria-label="Workout calendar for @Model.SelectedYear">
+            @foreach (var day in Model.CalendarDays)
+            {
+                if (day.IsInSelectedYear && day.WorkoutCount > 0)
+                {
+                    <a class="heatmap-day heat-@day.Intensity" asp-page="/History/Index" asp-route-dateFrom="@day.Date" asp-route-dateTo="@day.Date" title="@day.Date.ToString("d MMM yyyy"): @day.WorkoutCount workout@(day.WorkoutCount == 1 ? string.Empty : "s")" aria-label="@day.Date.ToString("d MMM yyyy"), @day.WorkoutCount workout@(day.WorkoutCount == 1 ? string.Empty : "s")"></a>
+                }
+                else
+                {
+                    <span class="heatmap-day @(day.IsInSelectedYear ? $"heat-{day.Intensity}" : "outside-year")" title="@day.Date.ToString("d MMM yyyy"): no workouts" aria-hidden="@(!day.IsInSelectedYear)"></span>
+                }
+            }
+        </div>
+    </div>
+</section>
+
+<section class="summary-grid">
+    <article class="panel">
+        <div class="section-heading"><h2>Programs</h2><span class="muted">@Model.Programs.Count</span></div>
+        @if (Model.Programs.Count == 0)
+        {
+            <p class="empty-state">No workouts were completed in @Model.SelectedYear.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead><tr><th>Program</th><th>Sessions</th><th>Active days</th><th>Avg duration</th><th>Exercises</th><th>Sets</th><th>Last used</th></tr></thead>
+                    <tbody>
+                        @foreach (var program in Model.Programs)
+                        {
+                            <tr>
+                                <td><a asp-page="/History/Index" asp-route-program="@program.ProgramName"><strong>@program.ProgramName</strong></a></td>
+                                <td>@program.SessionCount</td>
+                                <td>@program.ActiveDays</td>
+                                <td>@program.AverageDuration.ToString(@"h\:mm")</td>
+                                <td>@program.ExerciseCount</td>
+                                <td>@program.SetCount</td>
+                                <td>@program.LastPerformed.ToLocalTime().ToString("d MMM yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </article>
+
+    <article class="panel">
+        <div class="section-heading"><h2>Training days</h2><span class="muted">@Model.TrainingDays.Count</span></div>
+        @if (Model.TrainingDays.Count == 0)
+        {
+            <p class="empty-state">No training days to summarize.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead><tr><th>Workout</th><th>Program</th><th>Sessions</th><th>Avg duration</th><th>Avg sets</th><th>Last used</th></tr></thead>
+                    <tbody>
+                        @foreach (var day in Model.TrainingDays)
+                        {
+                            <tr>
+                                <td><a asp-page="/History/Index" asp-route-program="@day.ProgramName" asp-route-workoutName="@day.WorkoutName"><strong>@day.WorkoutName</strong></a></td>
+                                <td>@day.ProgramName</td>
+                                <td>@day.SessionCount</td>
+                                <td>@day.AverageDuration.ToString(@"h\:mm")</td>
+                                <td>@day.AverageSetCount.ToString("0.#")</td>
+                                <td>@day.LastPerformed.ToLocalTime().ToString("d MMM yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </article>
+</section>

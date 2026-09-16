@@ -15,6 +15,7 @@
                 <a asp-page="/Index" class="@(Context.Request.Path == "/" ? "active" : null)">Dashboard</a>
                 <a asp-page="/History/Index" class="@(Context.Request.Path.StartsWithSegments("/history") || Context.Request.Path.StartsWithSegments("/workouts") ? "active" : null)">History</a>
                 <a asp-page="/Progress/Index" class="@(Context.Request.Path.StartsWithSegments("/progress") ? "active" : null)">Progress</a>
+                <a asp-page="/Analytics/Index" class="@(Context.Request.Path.StartsWithSegments("/analytics") ? "active" : null)">Analytics</a>
                 <form method="post" asp-page="/Logout">
                     <button class="link-button" type="submit">Logout</button>
                 </form>
