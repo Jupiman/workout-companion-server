@@ -60,6 +60,53 @@ public sealed class HistoryRouteTests(TestApplicationFactory factory) : IClassFi
         Assert.Contains(">-1<", detailHtml, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task History_pagination_links_preserve_filter_state_and_highlighting()
+    {
+        var completedAt = new DateTimeOffset(2026, 9, 10, 12, 0, 0, TimeSpan.Zero);
+        var workouts = Enumerable.Range(0, 26)
+            .Select(index =>
+            {
+                var workout = CreateWorkout(Guid.NewGuid());
+                workout.ProgramNameSnapshot = "Paging Program";
+                workout.WorkoutNameSnapshot = $"Paging Workout {index:00}";
+                workout.StartedAt = completedAt.AddMinutes(index).AddHours(-1);
+                workout.CompletedAt = completedAt.AddMinutes(index);
+                workout.ReceivedAt = completedAt.AddMinutes(index + 1);
+                workout.LastReceivedAt = completedAt.AddMinutes(index + 1);
+                return workout;
+            });
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<WorkoutDbContext>();
+            database.WorkoutSessions.AddRange(workouts);
+            await database.SaveChangesAsync();
+        }
+
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true,
+        });
+        await LoginAsync(client);
+
+        using var response = await client.GetAsync(
+            "/history?Program=Paging%20Program&WorkoutName=Paging&Status=Completed&Exercise=Bench%20Press&Search=Paging&DateFrom=2026-09-01&DateTo=2026-09-30");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Matches("Page 1 of ([2-9]|[1-9][0-9]+)", html);
+        Assert.Contains("<mark>Paging</mark>", html, StringComparison.Ordinal);
+        Assert.Contains("pageNumber=2", html, StringComparison.Ordinal);
+        Assert.Contains("dateFrom=", html, StringComparison.Ordinal);
+        Assert.Contains("dateTo=", html, StringComparison.Ordinal);
+        Assert.Contains("program=Paging%20Program", html, StringComparison.Ordinal);
+        Assert.Contains("workoutName=Paging", html, StringComparison.Ordinal);
+        Assert.Contains("status=Completed", html, StringComparison.Ordinal);
+        Assert.Contains("exercise=Bench%20Press", html, StringComparison.Ordinal);
+        Assert.Contains("search=Paging", html, StringComparison.Ordinal);
+    }
+
     private static async Task LoginAsync(HttpClient client)
     {
         using var loginPage = await client.GetAsync("/Login");

@@ -43,6 +43,7 @@
         }
         else
         {
+            var warmupNumber = 0;
             <div class="table-scroll">
                 <table class="data-table set-table">
                     <thead>
@@ -51,12 +52,16 @@
                     <tbody>
                         @foreach (var set in exercise.Sets)
                         {
+                            var setLabel = set.SetType == WorkoutCompanion.Server.Contracts.WorkoutSetType.Warmup
+                                ? $"W{++warmupNumber}"
+                                : WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatSetLabel(set);
+                            var differsFromTarget = WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.SetDiffersFromTarget(exercise.TrackingMode, set);
                             <tr class="@(set.SetType == WorkoutCompanion.Server.Contracts.WorkoutSetType.Warmup ? "warmup-row" : null)">
-                                <td><strong>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatSetLabel(set)</strong></td>
+                                <td><strong>@setLabel</strong></td>
                                 <td>@set.SetOrder</td>
                                 <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatSetType(set.SetType)</td>
                                 <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatPerformance(exercise.TrackingMode, set.PrescribedWeightCentiKg, set.PrescribedReps, set.PrescribedDurationSeconds)</td>
-                                <td>@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatPerformance(exercise.TrackingMode, set.ActualWeightCentiKg, set.ActualReps, set.ActualDurationSeconds)</td>
+                                <td class="@(differsFromTarget ? "set-mismatch" : null)">@WorkoutCompanion.Server.Pages.Workouts.WorkoutDetailsModel.FormatPerformance(exercise.TrackingMode, set.ActualWeightCentiKg, set.ActualReps, set.ActualDurationSeconds)</td>
                                 <td>@set.Status</td>
                             </tr>
                         }

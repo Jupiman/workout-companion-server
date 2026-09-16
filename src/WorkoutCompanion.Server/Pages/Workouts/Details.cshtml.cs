@@ -107,6 +107,15 @@ public sealed class WorkoutDetailsModel(WorkoutDbContext database) : PageModel
         return $"{before} → {after}";
     }
 
+    public static bool SetDiffersFromTarget(TrackingMode mode, SetDetail set) => mode switch
+    {
+        TrackingMode.WeightReps => set.PrescribedWeightCentiKg != set.ActualWeightCentiKg
+            || set.PrescribedReps != set.ActualReps,
+        TrackingMode.Reps => set.PrescribedReps != set.ActualReps,
+        TrackingMode.Duration => set.PrescribedDurationSeconds != set.ActualDurationSeconds,
+        _ => false,
+    };
+
     private static string FormatWeight(int? weightCentiKg) => weightCentiKg.HasValue
         ? $"{(weightCentiKg.Value / 100m).ToString("0.##", CultureInfo.InvariantCulture)} kg"
         : "—";

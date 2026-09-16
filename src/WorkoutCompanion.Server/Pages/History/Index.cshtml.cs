@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +44,8 @@ public sealed class HistoryModel(WorkoutDbContext database) : PageModel
     public IReadOnlyList<string> ProgramOptions { get; private set; } = [];
     public IReadOnlyList<string> ExerciseOptions { get; private set; } = [];
     public int TotalCount { get; private set; }
+    public int FilteredExerciseCount { get; private set; }
+    public int FilteredSetCount { get; private set; }
     public int TotalPages { get; private set; }
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;
@@ -115,6 +120,13 @@ public sealed class HistoryModel(WorkoutDbContext database) : PageModel
         }
 
         TotalCount = await query.CountAsync(cancellationToken);
+        FilteredExerciseCount = await query
+            .SelectMany(workout => workout.Exercises)
+            .CountAsync(cancellationToken);
+        FilteredSetCount = await query
+            .SelectMany(workout => workout.Exercises)
+            .SelectMany(exercise => exercise.Sets)
+            .CountAsync(cancellationToken);
         TotalPages = (int)Math.Ceiling(TotalCount / (double)PageSize);
         PageNumber = Math.Clamp(PageNumber, 1, Math.Max(TotalPages, 1));
 
@@ -135,6 +147,34 @@ public sealed class HistoryModel(WorkoutDbContext database) : PageModel
                 SetCount = workout.Exercises.SelectMany(exercise => exercise.Sets).Count(),
             })
             .ToListAsync(cancellationToken);
+    }
+
+    public static IHtmlContent Highlight(string value, string? term)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return new HtmlString(HtmlEncoder.Default.Encode(value));
+        }
+
+        var result = new StringBuilder();
+        var cursor = 0;
+        while (cursor < value.Length)
+        {
+            var match = value.IndexOf(term, cursor, StringComparison.OrdinalIgnoreCase);
+            if (match < 0)
+            {
+                result.Append(HtmlEncoder.Default.Encode(value[cursor..]));
+                break;
+            }
+
+            result.Append(HtmlEncoder.Default.Encode(value[cursor..match]));
+            result.Append("<mark>");
+            result.Append(HtmlEncoder.Default.Encode(value.Substring(match, term.Length)));
+            result.Append("</mark>");
+            cursor = match + term.Length;
+        }
+
+        return new HtmlString(result.ToString());
     }
 
     private static string? Normalize(string? value) =>

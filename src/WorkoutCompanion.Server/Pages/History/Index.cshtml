@@ -65,6 +65,12 @@
     </form>
 </section>
 
+<section class="history-stat-grid" aria-label="Filtered history statistics">
+    <article><span>Workouts</span><strong>@Model.TotalCount</strong></article>
+    <article><span>Exercises</span><strong>@Model.FilteredExerciseCount</strong></article>
+    <article><span>Sets</span><strong>@Model.FilteredSetCount</strong></article>
+</section>
+
 <section class="panel history-panel">
     <div class="section-heading">
         <h2>Workouts</h2>
@@ -94,8 +100,8 @@
                     {
                         <tr>
                             <td><a asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId"><time datetime="@workout.CompletedAt.ToString("O")">@workout.CompletedAt.ToLocalTime().ToString("d MMM yyyy, HH:mm")</time></a></td>
-                            <td>@workout.ProgramName</td>
-                            <td><a asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId"><strong>@workout.WorkoutName</strong></a></td>
+                            <td>@WorkoutCompanion.Server.Pages.History.HistoryModel.Highlight(workout.ProgramName, Model.Search)</td>
+                            <td><a asp-page="/Workouts/Details" asp-route-syncId="@workout.SyncId"><strong>@WorkoutCompanion.Server.Pages.History.HistoryModel.Highlight(workout.WorkoutName, Model.Search)</strong></a></td>
                             <td><span class="status">@workout.Status.ToString().ToUpperInvariant()</span></td>
                             <td>@workout.Duration.ToString(@"h\:mm")</td>
                             <td>@workout.ExerciseCount</td>

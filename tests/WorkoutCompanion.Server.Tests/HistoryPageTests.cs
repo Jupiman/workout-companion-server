@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.Sqlite;
@@ -74,8 +75,49 @@ public sealed class HistoryPageTests
         Assert.Equal("Leg Day", result.WorkoutName);
         Assert.Equal("Alpha", result.ProgramName);
         Assert.Equal(WorkoutStatus.Partial, result.Status);
+        Assert.Equal(1, page.FilteredExerciseCount);
+        Assert.Equal(1, page.FilteredSetCount);
         Assert.Contains("Alpha", page.ProgramOptions);
         Assert.Contains("Hack Squat", page.ExerciseOptions);
+    }
+
+    [Fact]
+    public void Search_highlighting_is_case_insensitive_and_html_safe()
+    {
+        var highlighted = HistoryModel.Highlight("Alpha <Bench> bench", "BENCH");
+        using var writer = new StringWriter();
+
+        highlighted.WriteTo(writer, HtmlEncoder.Default);
+
+        Assert.Equal("Alpha &lt;<mark>Bench</mark>&gt; <mark>bench</mark>", writer.ToString());
+    }
+
+    [Theory]
+    [InlineData(TrackingMode.WeightReps, 7000, 8, null, 7000, 7, null, true)]
+    [InlineData(TrackingMode.WeightReps, 7000, 8, null, 7000, 8, null, false)]
+    [InlineData(TrackingMode.Reps, null, 10, null, null, 9, null, true)]
+    [InlineData(TrackingMode.Duration, null, null, 60, null, null, 60, false)]
+    public void Detail_detects_target_and_actual_differences(
+        TrackingMode mode,
+        int? prescribedWeight,
+        int? prescribedReps,
+        int? prescribedDuration,
+        int? actualWeight,
+        int? actualReps,
+        int? actualDuration,
+        bool expected)
+    {
+        var set = new WorkoutDetailsModel.SetDetail
+        {
+            PrescribedWeightCentiKg = prescribedWeight,
+            PrescribedReps = prescribedReps,
+            PrescribedDurationSeconds = prescribedDuration,
+            ActualWeightCentiKg = actualWeight,
+            ActualReps = actualReps,
+            ActualDurationSeconds = actualDuration,
+        };
+
+        Assert.Equal(expected, WorkoutDetailsModel.SetDiffersFromTarget(mode, set));
     }
 
     [Fact]
